@@ -2,7 +2,7 @@
 
 <img src="https://upload.wikimedia.org/wikipedia/commons/1/10/Athanor.jpg" alt="Athanor" />
 
-A tool providing a a Pythonic interface to SQLAlchemy while enforcing authorization criteria.
+A tool providing a a Pythonic interface to SQLAlchemy while enforcing authorization criteria for Flask.
 
 SQLAlchemy provides a phenomenal interface for querying a database.
 However, this package is designed to enable the construction of handler objects that perform a series of consistent actions on many similar ORM entities.
