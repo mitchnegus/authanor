@@ -66,3 +66,8 @@ force-exclude = 'authanor/_version.py'
 [tool.isort]
 profile = 'black'
 src_paths = ['authanor', 'test']
+
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+]

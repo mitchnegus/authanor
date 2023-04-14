@@ -3,7 +3,7 @@ PYTHON = python3.9
 PIP = $(PYTHON) -m pip
 # Package
 PACKAGE = authanor
-PACKAGE_DIR = $(PACKAGE)
+PACKAGE_DIR = src/$(PACKAGE)
 PACKAGE_PYTHON_FILES = $(wildcard $(PACKAGE_DIR)/*.py) \
 		       $(wildcard $(PACKAGE_DIR)/**/*.py)
 # Requirements files
