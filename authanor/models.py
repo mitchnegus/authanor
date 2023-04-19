@@ -1,3 +1,6 @@
+"""
+ORM model definitions corresponding to tables in the SQLite database.
+"""
 from datetime import date
 
 from flask import g
@@ -57,7 +60,10 @@ class AuthorizedAccessMixin:
     @classmethod
     def authorized_ids(cls):
         # Add any extra IDs specified (e.g., user ID 0 for common entries)
-        return (g.user.id, *cls._alt_authorized_ids)
+        current_user_id = getattr(g.user, "id", None)
+        authorized_user_ids = [current_user_id] if current_user_id else []
+        authorized_user_ids.extend(cls._alt_authorized_ids)
+        return authorized_user_ids
 
     @classmethod
     def select_for_user(cls, *args, guaranteed_joins=(), **kwargs):
