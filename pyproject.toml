@@ -19,6 +19,7 @@ keywords = [
 classifiers = [
   'Development Status :: 3 - Alpha',
   'Framework :: Flask',
+  'Framework :: Pytest',
   'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
   'Natural Language :: English',
   'Operating System :: OS Independent',
@@ -31,6 +32,9 @@ Download = 'https://pypi.org/project/authanor'
 Homepage = 'https://github.com/mitchnegus/authanor'
 Repository = 'https://github.com/mitchnegus/authanor'
 Changelog = 'https://github.com/mitchnegus/authanor/blob/main/CHANGELOG.md'
+
+[project.entry-points.pytest11]
+authanor = "authanor.test.helpers"
 
 [tool.hatch.version]
 source = 'vcs'
