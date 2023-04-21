@@ -1,11 +1,12 @@
 """
 A database handler for facilitating interactions with the SQLite database.
 """
+import functools
 from abc import ABCMeta
 from collections import UserList
 
 from flask import current_app, g
-from sqlalchemy import inspect, select
+from sqlalchemy import select
 from sqlalchemy.exc import ArgumentError, NoResultFound
 from werkzeug.exceptions import abort
 
@@ -131,7 +132,7 @@ class QueryCriteria(UserList):
             self.discriminators.append(model)
 
     def append(self, item):
-        raise NotImplementedError(
+        raise RuntimeError(
             "The `QueryCriteria` object can not be appended to directly. Use a helper "
             "method (e.g., `add_match_filter`) instead."
         )
@@ -153,7 +154,7 @@ class DatabaseHandlerMixin:
     _initialize_criteria_list = QueryCriteria
 
     @classmethod
-    def _make_select_query(cls, model, **kwargs):
+    def _make_select_query(cls, **kwargs):
         # Query entries for the authorized user (or fall back to SQLAlchemy `select`)
         select_method = getattr(cls.model, "select_for_user", select)
         query = select_method(cls.model, **kwargs)
@@ -181,7 +182,7 @@ class DatabaseHandlerMixin:
         entries : list of database.models.Model
             Models containing matching entries from the database.
         """
-        query = cls._make_select_query(cls.model, **kwargs)
+        query = cls._make_select_query(**kwargs)
         query = cls._customize_entries_query(query, criteria, sort_order)
         entries = cls._db.session.execute(query).scalars()
         return entries
@@ -212,7 +213,7 @@ class DatabaseHandlerMixin:
         """
         if criteria:
             # Query entries from the authorized user
-            query = cls._make_select_query(cls.model)
+            query = cls._make_select_query()
             query = cls._customize_entries_query(query, criteria, sort_order)
             results = cls._db.session.execute(query)
             if require_unique:
@@ -272,20 +273,20 @@ class DatabaseHandlerMixin:
         Retrieve a single entry from the database.
 
         Executes a simple query from the database to get a single entry
-        by ID.
+        by its primary key (most often its ID).
 
         Parameters
         ----------
         entry_id : int
-            The ID of the entry to be found.
+            The primary key (ID) of the entry to be found.
 
         Returns
         -------
         entry : database.models.Model
             A model containing a matching entry from the database.
         """
-        criteria = [cls.model.id == entry_id]
-        query = cls.model.select_for_user().where(*criteria)
+        criteria = [cls.model.primary_key_field == entry_id]
+        query = cls._make_select_query().where(*criteria)
         try:
             entry = cls._db.session.execute(query).scalar_one()
         except NoResultFound:
@@ -295,7 +296,30 @@ class DatabaseHandlerMixin:
             abort(404, abort_msg)
         return entry
 
+    def entry_saver(method):
+        """
+        A decorator to facilitate saving an entry safely.
+
+        This decorator wraps a function that saves an entry. The entry
+        must always be a normal entry (not a view) for the save
+        operation to succeed, and the saved entry should also be
+        validated to ensure that it belongs to an authorized user. This
+        method performs both functions: it takes the saved entry and
+        queries the database for the up-to-date version, using the
+        handler logic to choose either the entry or the corresponding
+        view; that process implicitly guarantees authorization.
+        """
+        @functools.wraps(method)
+        def wrapper(cls, *args, **kwargs):
+            entry = method(cls, *args, **kwargs)
+            # Return either the entry or its view (implicitly confirming authorizatio)
+            entry_id = getattr(entry, entry.primary_key_field.name)
+            entry = cls.get_entry(entry_id)
+            return entry
+        return wrapper
+
     @classmethod
+    @entry_saver
     def add_entry(cls, **field_values):
         """
         Create a new entry in the database given field values.
@@ -313,11 +337,10 @@ class DatabaseHandlerMixin:
         entry = cls.model(**field_values)
         cls._db.session.add(entry)
         cls._db.session.flush()
-        # Confirm that this was an authorized entry by the user
-        entry = cls.get_entry(entry.id)
         return entry
 
     @classmethod
+    @entry_saver
     def update_entry(cls, entry_id, **field_values):
         """
         Update an entry in the database given field values.
@@ -338,9 +361,9 @@ class DatabaseHandlerMixin:
         entry : database.models.Model
             The saved entry.
         """
-        cls._confirm_manipulation_authorization(entry_id)
+        cls._validate_authorization(entry_id)
         entry = cls._db.session.get(cls.model, entry_id)
-        entry_fields = [column.name for column in inspect(cls.model).columns]
+        entry_fields = [column.name for column in cls.model.fields]
         for field, value in field_values.items():
             if field not in entry_fields:
                 raise ValueError(
@@ -348,8 +371,6 @@ class DatabaseHandlerMixin:
                 )
             setattr(entry, field, value)
         cls._db.session.flush()
-        # Confirm that this was an authorized entry by the user
-        entry = cls.get_entry(entry.id)
         return entry
 
     @classmethod
@@ -362,13 +383,13 @@ class DatabaseHandlerMixin:
         entry_id : int
             The ID of the entry to be deleted.
         """
-        cls._confirm_manipulation_authorization(entry_id)
+        cls._validate_authorization(entry_id)
         entry = cls._db.session.get(cls.model, entry_id)
         cls._db.session.delete(entry)
         cls._db.session.flush()
 
     @classmethod
-    def _confirm_manipulation_authorization(cls, entry_id):
+    def _validate_authorization(cls, entry_id):
         # Confirm (via access) that the user may manipulate the entry
         return cls.get_entry(entry_id)
 
@@ -390,6 +411,7 @@ class DatabaseViewHandlerMixin(DatabaseHandlerMixin):
     def view_query(func):
         """Require that a function use a model view rather than the model."""
 
+        @functools.wraps(func)
         def wrapper(cls, *args, **kwargs):
             orig_view_context = cls._view_context
             cls._view_context = True

@@ -3,7 +3,7 @@ from contextlib import nullcontext as does_not_raise
 
 import pytest
 
-from authanor.utils import validate_sort_order
+from authanor.database.utils import validate_sort_order
 
 
 @pytest.mark.parametrize(

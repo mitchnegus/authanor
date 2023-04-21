@@ -4,7 +4,7 @@ ORM model definitions corresponding to tables in the SQLite database.
 from datetime import date
 
 from flask import g
-from sqlalchemy import select
+from sqlalchemy import inspect, select
 from sqlalchemy.orm import DeclarativeBase, declared_attr
 
 
@@ -27,6 +27,16 @@ class Model(DeclarativeBase):
         pairs = [self._format_repr_attr(_) for _ in repr_attributes]
         attributes_str = ", ".join(pairs)
         return f"{self.__class__.__name__}({attributes_str})"
+
+    @declared_attr.directive
+    @classmethod
+    def fields(cls):
+        return inspect(cls).columns
+
+    @declared_attr.directive
+    @classmethod
+    def primary_key_field(cls):
+        return inspect(cls).primary_key[0]
 
 
 class AuthorizedAccessMixin:

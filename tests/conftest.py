@@ -2,49 +2,45 @@ from unittest.mock import Mock, patch
 
 import pytest
 from flask import Flask
-from sqlalchemy import Integer, String, create_engine
-from sqlalchemy.orm import mapped_column
+from sqlalchemy import create_engine
 
-from authanor.database import SQLAlchemy
-from authanor.models import AuthorizedAccessMixin, Model
+from authanor.database import SQLAlchemy as _SQLAlchemy
 from authanor.test.helpers import AppTestManager
 
-
-class Entry(Model):
-    __tablename__ = "entries"
-    # Columns
-    x = mapped_column(Integer, primary_key=True)
-    y = mapped_column(String, nullable=False)
-    user_id = mapped_column(Integer, nullable=False)
+from .helpers import AuthorizedEntry, Entry
 
 
-class AuthorizedEntry(AuthorizedAccessMixin, Model):
-    __tablename__ = "authorized_entries"
-    _user_id_join_chain = (Entry,)
-    # Columns
-    a = mapped_column(Integer, primary_key=True)
-    b = mapped_column(String, nullable=False)
-
-
-@pytest.fixture
-def entry_model_type():
-    return Entry
-
-
-@pytest.fixture
-def authorized_entry_model_type():
-    return AuthorizedEntry
+class SQLAlchemy(_SQLAlchemy):
+    def initialize(self, app):
+        """Initialize (and prepopulate) the database for testing."""
+        super().initialize(app)
+        with app.db.session.begin():
+            entries = [
+                Entry(x=1, y="ten", user_id=1),
+                Entry(x=2, y="eleven", user_id=1),
+                Entry(x=3, y="twenty", user_id=2),
+            ]
+            authorized_entries = [
+                AuthorizedEntry(a=1, b="one", c=1),
+                AuthorizedEntry(a=2, b="two", c=1),
+                AuthorizedEntry(a=3, b="three", c=3),
+            ]
+            app.db.session.add_all(entries + authorized_entries)
 
 
 def create_test_app(test_config):
     # Create and configure the test app
     app = Flask("test")
     app.config.from_object(test_config)
-    # Set up the test database
-    app.db = SQLAlchemy()
-    app.db.setup_engine(test_config.DATABASE)
-    app.db.create_tables()
+    init_app(app)
     return app
+
+
+@SQLAlchemy.interface_selector(interface_instance=None)
+def init_app(app):
+    # Initialize the app
+    # * The decorator performs all necessary actions in this minimal test example
+    pass
 
 
 # Instantiate the app manager to determine the correct app (persistent/ephemeral)

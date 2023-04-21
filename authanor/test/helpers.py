@@ -8,6 +8,9 @@ from collections import namedtuple
 from contextlib import contextmanager
 
 import pytest
+from sqlalchemy import inspect, select
+from sqlalchemy.sql.expression import func
+from werkzeug.exceptions import NotFound
 
 
 registry = {"app_manager": None}
@@ -119,6 +122,7 @@ class AppTestManager:
 
     @staticmethod
     def prepare_test_config(test_db_path, *args, **kwargs):
+        """Prepare a configuration object for the app. It must define a database."""
         return DefaultTestingConfig(test_db_path)
 
     @staticmethod
@@ -150,13 +154,74 @@ def transaction_lifetime(test_function):
     wrapped_test_function : callable
         The wrapped test.
     """
-
     @pytest.mark.usefixtures("app_transaction_context")
     @functools.wraps(test_function)
-    def wrapped_test_function(*args, **kwargs):
+    def wrapper(*args, **kwargs):
         test_function(*args, **kwargs)
+    return wrapper
 
-    return wrapped_test_function
+
+class TestHandler:
+    """A base class for testing database handlers."""
+
+    @pytest.fixture(autouse=True)
+    def _get_app(self, app):
+        # Use the client fixture in route tests
+        self._app = app
+
+    @staticmethod
+    def assertEntryMatches(entry, reference):
+        assert isinstance(entry, type(reference))
+        for column in inspect(type(entry)).columns:
+            field = column.name
+            assert getattr(entry, field) == getattr(reference, field)
+
+    @classmethod
+    def assertEntriesMatch(cls, entries, references, order=False):
+        entries = list(entries)
+        references = list(references)
+        if references and not order:
+            # Order does not matter, so sort both entries and references by ID
+            primary_key = inspect(type(references[0])).primary_key[0].name
+            entries = sorted(entries, key=lambda entry: getattr(entry, primary_key))
+            references = sorted(
+                references, key=lambda reference: getattr(reference, primary_key)
+            )
+        assert len(entries) == len(references)
+        # Compare the list elements
+        for entry, reference in zip(entries, references):
+            cls.assertEntryMatches(entry, reference)
+
+    def assertNumberOfMatches(self, number, field, *criteria):
+        query = select(func.count(field))
+        if criteria:
+            query = query.where(*criteria)
+        count = self._app.db.session.execute(query).scalar()
+        assert count == number
+
+    def assert_invalid_user_entry_add_fails(
+        self, handler, mapping, invalid_user_id, invalid_matches
+    ):
+        # Count the original number of entries
+        query = select(func.count(handler.model.primary_key_field))
+        entry_count = self._app.db.session.execute(query).scalar()
+        # Ensure that the mapping cannot be added for the invalid user
+        with pytest.raises(NotFound):
+            handler.add_entry(**mapping)
+        # Rollback and ensure that an entry was not added
+        self._app.db.close()
+        self.assertNumberOfMatches(
+            entry_count, handler.model.primary_key_field
+        )
+
+    def assert_entry_deletion_succeeds(self, handler, entry_id):
+        handler.delete_entry(entry_id)
+        # Check that the entry was deleted
+        self.assertNumberOfMatches(
+            0,
+            handler.model.primary_key_field,
+            handler.model.primary_key_field == entry_id
+        )
 
 
 def pytest_generate_tests(metafunc):

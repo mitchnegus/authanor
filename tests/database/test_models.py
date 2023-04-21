@@ -3,17 +3,19 @@ from unittest.mock import Mock, call, patch
 
 import pytest
 
-from authanor.models import AuthorizedAccessMixin, Model
+from authanor.database.models import AuthorizedAccessMixin, Model
+
+from ..helpers import AuthorizedEntry, Entry
 
 
 class TestModels:
-    def test_model_initialization(self, entry_model_type):
+    def test_model_initialization(self):
         mapping = {
             "x": 1,
             "y": "test1",
             "user_id": 1,
         }
-        model = entry_model_type(**mapping)
+        model = Entry(**mapping)
         for field in mapping:
             assert getattr(model, field) == mapping[field]
 
@@ -30,58 +32,51 @@ class TestModels:
             ],
         ],
     )
-    def test_model_representation(
-        self, entry_model_type, mapping, expected_repr_string
-    ):
-        entry = entry_model_type(**mapping)
+    def test_model_representation(self, mapping, expected_repr_string):
+        entry = Entry(**mapping)
         assert repr(entry) == expected_repr_string
 
 
 class TestAuthorizedModels:
-    def test_user_id_join_chain(self, authorized_entry_model_type, entry_model_type):
-        assert authorized_entry_model_type.user_id_model == entry_model_type
+    def test_user_id_join_chain(self):
+        assert AuthorizedEntry.user_id_model == Entry
 
-    def test_model_is_user_id_model(self, authorized_entry_model_type):
-        with patch.object(authorized_entry_model_type, "_user_id_join_chain", new=()):
-            assert (
-                authorized_entry_model_type.user_id_model is authorized_entry_model_type
-            )
+    def test_model_is_user_id_model(self):
+        with patch.object(AuthorizedEntry, "_user_id_join_chain", new=()):
+            assert AuthorizedEntry.user_id_model is AuthorizedEntry
 
-    @patch("authanor.models.select")
-    @patch("authanor.models.g")
+    @patch("authanor.database.models.select")
+    @patch("authanor.database.models.g")
     def test_select_for_user(
         self,
         mock_global_namespace,
         mock_select_method,
         client_context,
-        authorized_entry_model_type,
     ):
-        authorized_entry_model_type.select_for_user()
-        mock_select_method.assert_called_once_with(authorized_entry_model_type)
+        AuthorizedEntry.select_for_user()
+        mock_select_method.assert_called_once_with(AuthorizedEntry)
 
-    @patch("authanor.models.select")
-    @patch("authanor.models.g")
+    @patch("authanor.database.models.select")
+    @patch("authanor.database.models.g")
     def test_select_specified_for_user(
         self,
         mock_global_namespace,
         mock_select_method,
         client_context,
-        authorized_entry_model_type,
     ):
         mock_args = [Mock(), Mock(), Mock()]
-        authorized_entry_model_type.select_for_user(*mock_args)
+        AuthorizedEntry.select_for_user(*mock_args)
         mock_select_method.assert_called_once_with(*mock_args)
 
-    @patch("authanor.models.AuthorizedAccessMixin._join_user")
-    @patch("authanor.models.select")
-    @patch("authanor.models.g")
+    @patch("authanor.database.models.AuthorizedAccessMixin._join_user")
+    @patch("authanor.database.models.select")
+    @patch("authanor.database.models.g")
     def test_select_for_user_guaranteed_joins(
         self,
         mock_global_namespace,
         mock_select_method,
         mock_join_user_method,
         client_context,
-        authorized_entry_model_type,
     ):
         # Mock a `Select` object (to be iteratively mutated)
         mock_select = Mock()
@@ -89,15 +84,13 @@ class TestAuthorizedModels:
         mock_select.join.return_value = mock_select
         # Issue the select statement relying on the mocked objects
         mock_joins = [Mock(), Mock(), Mock()]
-        authorized_entry_model_type.select_for_user(guaranteed_joins=mock_joins)
+        AuthorizedEntry.select_for_user(guaranteed_joins=mock_joins)
         mock_select.join.assert_has_calls([call(_) for _ in mock_joins])
         assert mock_select.join.call_count == len(mock_joins)
 
-    @patch("authanor.models.AuthorizedAccessMixin.user_id_model", new=None)
-    @patch("authanor.models.g")
-    def test_invalid_authorized_model(
-        self, mock_global_namespace, client_context, authorized_entry_model_type
-    ):
+    @patch("authanor.database.models.AuthorizedAccessMixin.user_id_model", new=None)
+    @patch("authanor.database.models.g")
+    def test_invalid_authorized_model(self, mock_global_namespace, client_context):
         # Test that the model cannot make a selection based on the user
         with pytest.raises(AttributeError):
-            authorized_entry_model_type.select_for_user()
+            AuthorizedEntry.select_for_user()
