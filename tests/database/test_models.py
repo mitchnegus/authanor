@@ -39,11 +39,16 @@ class TestModels:
 
 class TestAuthorizedModels:
     def test_user_id_join_chain(self):
-        assert AuthorizedEntry.user_id_model == Entry
+        assert AuthorizedEntry.user_id_model is Entry
+
+    def test_missing_user_id_join_chain(self):
+        class InvalidAuthorizedEntry(AuthorizedEntry):
+            _user_id_join_chain = ()
+        assert InvalidAuthorizedEntry.user_id_model is InvalidAuthorizedEntry
 
     def test_model_is_user_id_model(self):
         with patch.object(AuthorizedEntry, "_user_id_join_chain", new=()):
-            assert AuthorizedEntry.user_id_model is AuthorizedEntry
+            assert AuthorizedEntry.user_id_model is Entry
 
     @patch("authanor.database.models.select")
     @patch("authanor.database.models.g")
@@ -88,9 +93,9 @@ class TestAuthorizedModels:
         mock_select.join.assert_has_calls([call(_) for _ in mock_joins])
         assert mock_select.join.call_count == len(mock_joins)
 
-    @patch("authanor.database.models.AuthorizedAccessMixin.user_id_model", new=None)
     @patch("authanor.database.models.g")
     def test_invalid_authorized_model(self, mock_global_namespace, client_context):
         # Test that the model cannot make a selection based on the user
-        with pytest.raises(AttributeError):
-            AuthorizedEntry.select_for_user()
+        with patch.object(AuthorizedEntry, "user_id_model", new=None):
+            with pytest.raises(AttributeError):
+                AuthorizedEntry.select_for_user()

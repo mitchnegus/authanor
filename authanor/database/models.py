@@ -6,6 +6,7 @@ from datetime import date
 from flask import g
 from sqlalchemy import inspect, select
 from sqlalchemy.orm import DeclarativeBase, declared_attr
+from sqlalchemy.ext.hybrid import hybrid_property
 
 
 class Model(DeclarativeBase):
@@ -28,15 +29,13 @@ class Model(DeclarativeBase):
         attributes_str = ", ".join(pairs)
         return f"{self.__class__.__name__}({attributes_str})"
 
-    @declared_attr.directive
-    @classmethod
-    def fields(cls):
-        return inspect(cls).columns
+    @hybrid_property
+    def fields(self):
+        return self.__table__.columns
 
-    @declared_attr.directive
-    @classmethod
-    def primary_key_field(cls):
-        return inspect(cls).primary_key[0]
+    @hybrid_property
+    def primary_key_field(self):
+        return self.__mapper__.primary_key[0]
 
 
 class AuthorizedAccessMixin:
@@ -45,15 +44,14 @@ class AuthorizedAccessMixin:
     _user_id_join_chain = ()
     _alt_authorized_ids = ()
 
-    @declared_attr.directive
+    @declared_attr.cascading
     @classmethod
     def user_id_model(cls):
         if cls._user_id_join_chain:
             return cls._user_id_join_chain[-1]
         return cls
 
-    @declared_attr.directive
-    @classmethod
+    @hybrid_property
     def _authorizing_criteria(cls):
         try:
             user_id_field = cls.user_id_model.user_id
@@ -64,15 +62,16 @@ class AuthorizedAccessMixin:
                 "table where the user ID can be verified."
             )
             raise AttributeError(msg)
-        return user_id_field.in_(cls.authorized_ids)
+        # Ensure that the hybrid property's return value is always a list of values
+        authorized_ids = list(cls.authorized_ids)
+        return user_id_field.in_(authorized_ids)
 
-    @declared_attr.directive
-    @classmethod
-    def authorized_ids(cls):
+    @hybrid_property
+    def authorized_ids(self):
         # Add any extra IDs specified (e.g., user ID 0 for common entries)
         current_user_id = getattr(g.user, "id", None)
         authorized_user_ids = [current_user_id] if current_user_id else []
-        authorized_user_ids.extend(cls._alt_authorized_ids)
+        authorized_user_ids.extend(self._alt_authorized_ids)
         return authorized_user_ids
 
     @classmethod
