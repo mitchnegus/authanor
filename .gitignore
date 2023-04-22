@@ -70,7 +70,7 @@ target/
 .DS_Store
 
 # Virtual environment
-auth-env/
+authanor-env/
 
 # Hatch-generated version file
 authanor/_version.py
