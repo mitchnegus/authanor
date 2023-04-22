@@ -64,14 +64,25 @@ replacement = 'src="https://raw.githubusercontent.com/mitchnegus/authanor/main/\
 pattern = '\[(.+?)\]\(((?!https?://)\S+?)\)'
 replacement = '[\1](https://github.com/mitchnegus/authanor/blob/main/\g<2>)'
 
+[tool.pytest.ini_options]
+addopts = [
+  '--import-mode=importlib',
+]
+
+[tool.coverage.run]
+omit = [
+  'tests/*',
+  'authanor/test/helpers.py',
+]
+
+[tool.coverage.report]
+exclude_lines = [
+  'raise NotImplementedError',
+]
+
 [tool.black]
 force-exclude = 'authanor/_version.py'
 
 [tool.isort]
 profile = 'black'
 src_paths = ['authanor', 'test']
-
-[tool.pytest.ini_options]
-addopts = [
-    "--import-mode=importlib",
-]
