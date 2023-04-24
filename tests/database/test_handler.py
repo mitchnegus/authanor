@@ -13,7 +13,12 @@ from authanor.database.handler import (
 )
 from authanor.test.helpers import TestHandler
 
-from ..helpers import AuthorizedEntry, Entry
+from ..helpers import (
+    AlternateAuthorizedEntry,
+    AlternateAuthorizedEntryView,
+    AuthorizedEntry,
+    Entry,
+)
 
 
 class EntryHandler(DatabaseHandler, model=Entry):

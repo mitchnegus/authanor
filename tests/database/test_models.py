@@ -44,6 +44,7 @@ class TestAuthorizedModels:
     def test_missing_user_id_join_chain(self):
         class InvalidAuthorizedEntry(AuthorizedEntry):
             _user_id_join_chain = ()
+
         assert InvalidAuthorizedEntry.user_id_model is InvalidAuthorizedEntry
 
     def test_model_is_user_id_model(self):

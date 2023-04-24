@@ -7,25 +7,29 @@ from sqlalchemy import create_engine
 from authanor.database import SQLAlchemy as _SQLAlchemy
 from authanor.test.helpers import AppTestManager
 
-from .helpers import AuthorizedEntry, Entry
+from .helpers import AlternateAuthorizedEntry, AuthorizedEntry, Entry
 
 
 class SQLAlchemy(_SQLAlchemy):
     def initialize(self, app):
         """Initialize (and prepopulate) the database for testing."""
         super().initialize(app)
-        with app.db.session.begin():
-            entries = [
-                Entry(x=1, y="ten", user_id=1),
-                Entry(x=2, y="eleven", user_id=1),
-                Entry(x=3, y="twenty", user_id=2),
-            ]
-            authorized_entries = [
-                AuthorizedEntry(a=1, b="one", c=1),
-                AuthorizedEntry(a=2, b="two", c=1),
-                AuthorizedEntry(a=3, b="three", c=3),
-            ]
-            app.db.session.add_all(entries + authorized_entries)
+        _preload_database(app)
+
+
+def _preload_database(app):
+    with app.db.session.begin():
+        entries = [
+            Entry(x=1, y="ten", user_id=1),
+            Entry(x=2, y="eleven", user_id=1),
+            Entry(x=3, y="twenty", user_id=2),
+            AuthorizedEntry(a=1, b="one", c=1),
+            AuthorizedEntry(a=2, b="two", c=1),
+            AuthorizedEntry(a=3, b="three", c=3),
+            AlternateAuthorizedEntry(p=1, q=1),
+            AlternateAuthorizedEntry(p=2, q=2),
+        ]
+        app.db.session.add_all(entries)
 
 
 def create_test_app(test_config):
