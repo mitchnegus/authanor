@@ -186,7 +186,7 @@ class TestHandler:
         )
 
     @staticmethod
-    def assertEntryMatches(entry, reference):
+    def assert_entry_matches(entry, reference):
         assert isinstance(entry, type(reference))
         for column in inspect(type(entry)).columns:
             field = column.name
@@ -197,7 +197,7 @@ class TestHandler:
             )
 
     @classmethod
-    def assertEntriesMatch(cls, entries, references, order=False):
+    def assert_entries_match(cls, entries, references, order=False):
         entries = list(entries)
         references = list(references)
         if references and not order:
@@ -215,9 +215,9 @@ class TestHandler:
         )
         # Compare the list elements
         for entry, reference in zip(entries, references):
-            cls.assertEntryMatches(entry, reference)
+            cls.assert_entry_matches(entry, reference)
 
-    def assertNumberOfMatches(self, number, field, *criteria):
+    def assert_number_of_matches(self, number, field, *criteria):
         query = select(func.count(field))
         if criteria:
             query = query.where(*criteria)
@@ -237,14 +237,14 @@ class TestHandler:
             handler.add_entry(**mapping)
         # Rollback and ensure that an entry was not added
         self._app.db.close()
-        self.assertNumberOfMatches(
+        self.assert_number_of_matches(
             entry_count, handler.model.primary_key_field
         )
 
     def assert_entry_deletion_succeeds(self, handler, entry_id):
         handler.delete_entry(entry_id)
         # Check that the entry was deleted
-        self.assertNumberOfMatches(
+        self.assert_number_of_matches(
             0,
             handler.model.primary_key_field,
             handler.model.primary_key_field == entry_id
