@@ -199,9 +199,7 @@ class TestHandler:
         count = self._app.db.session.execute(query).scalar()
         assert count == number
 
-    def assert_invalid_user_entry_add_fails(
-        self, handler, mapping, invalid_user_id, invalid_matches
-    ):
+    def assert_invalid_user_entry_add_fails(self, handler, mapping):
         # Count the original number of entries
         query = select(func.count(handler.model.primary_key_field))
         entry_count = self._app.db.session.execute(query).scalar()
