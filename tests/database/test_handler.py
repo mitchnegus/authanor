@@ -21,14 +21,6 @@ from ..helpers import (
 )
 
 
-class EntryHandler(DatabaseHandler, model=Entry):
-    """A minimal database handler for testing."""
-
-
-class AuthorizedEntryHandler(DatabaseHandler, model=AuthorizedEntry):
-    """A minimal database handler for testing."""
-
-
 @contextmanager
 def mocked_user(user_id):
     with patch("authanor.database.handler.g") as mock_global_namespace:
@@ -37,10 +29,18 @@ def mocked_user(user_id):
             yield
 
 
+class EntryHandler(DatabaseHandler, model=Entry):
+    """A minimal database handler for testing."""
+
+
 @pytest.fixture
 def entry_handler(client_context):
     with mocked_user(user_id=1):
         yield EntryHandler
+
+
+class AuthorizedEntryHandler(DatabaseHandler, model=AuthorizedEntry):
+    """A minimal database handler for testing."""
 
 
 @pytest.fixture
@@ -110,7 +110,7 @@ class TestDatabaseHandler(TestHandler):
 
     def test_initialization(self, entry_handler):
         assert entry_handler.model == Entry
-        assert entry_handler.table == "entries"
+        assert entry_handler.table.name == "entries"
         assert entry_handler.user_id == 1
 
     @pytest.mark.parametrize(
@@ -361,3 +361,31 @@ class TestDatabaseHandler(TestHandler):
     ):
         with pytest.raises(exception):
             authorized_entry_handler.delete_entry(authorized_entry_id)
+
+
+class AlternateAuthorizedEntryViewHandler(
+    DatabaseViewHandler,
+    model=AlternateAuthorizedEntry,
+    model_view=AlternateAuthorizedEntryView,
+):
+    """A minimal database view handler for testing."""
+
+
+@pytest.fixture
+def view_handler(client_context):
+    with mocked_user(user_id=1):
+        yield AlternateAuthorizedEntryViewHandler
+
+
+class TestDatabaseViewHandler(TestHandler):
+    # Reference only includes authorized entries accessible to user ID 1
+    db_reference = [
+        AlternateAuthorizedEntryView(p=1, q=1, r=2),
+        AlternateAuthorizedEntryView(p=2, q=2, r=4),
+    ]
+
+    def test_initialization(self, view_handler):
+        assert view_handler.model == AlternateAuthorizedEntry
+        assert view_handler.table.name == "alt_authorized_entries"
+        assert view_handler.table_view.name == "alt_authorized_entries_view"
+        assert view_handler.user_id == 1

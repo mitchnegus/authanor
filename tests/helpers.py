@@ -52,7 +52,7 @@ class AlternateAuthorizedEntryView(AuthorizedAccessMixin, Model):
         select(
             AlternateAuthorizedEntry.p.label("p"),
             AlternateAuthorizedEntry.q.label("q"),
-            (AlternateAuthorizedEntry.p + AlternateAuthorizedEntry.q).label("p+q"),
+            (AlternateAuthorizedEntry.p + AlternateAuthorizedEntry.q).label("r"),
         ),
     )
     _user_id_join_chain = (AuthorizedEntry, Entry)

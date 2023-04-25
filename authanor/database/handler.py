@@ -47,7 +47,7 @@ class DatabaseHandlerMeta(ABCMeta):
 
     @property
     def table(cls):
-        return cls.model.__tablename__
+        return cls.model.__table__
 
     def _get_required_attribute_data_descriptor(cls, name):
         # The named property/attribute is a data descriptor, so standard overrides are
@@ -92,11 +92,11 @@ class DatabaseViewHandlerMeta(DatabaseHandlerMeta):
 
     @property
     def table(cls):
-        return cls._model.__tablename__
+        return cls._model.__table__
 
     @property
     def table_view(cls):
-        return cls._model_view.__tablename__
+        return cls._model_view.__table__
 
 
 class QueryCriteria(UserList):
