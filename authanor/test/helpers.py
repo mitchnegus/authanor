@@ -1,11 +1,13 @@
 """
 Helper tools to improve testing of authorized database interactions.
 """
+import textwrap
 import functools
 import os
 import tempfile
 from collections import namedtuple
 from contextlib import contextmanager
+from pprint import pformat
 
 import pytest
 from sqlalchemy import inspect, select
@@ -170,11 +172,29 @@ class TestHandler:
         self._app = app
 
     @staticmethod
+    def _format_reference_comparison(references, entries):
+        default_indent = "\t\t       "
+        wrap_kwargs = {
+            "initial_indent": default_indent,
+            "subsequent_indent": f"{default_indent} ",
+        }
+        references_string = textwrap.fill(pformat(references, depth=1), **wrap_kwargs)
+        entries_string = textwrap.fill(pformat(entries, depth=1), **wrap_kwargs)
+        return (
+            f"\n\t     references:\n{references_string}"
+            f"\n\t        entries:\n{entries_string}"
+        )
+
+    @staticmethod
     def assertEntryMatches(entry, reference):
         assert isinstance(entry, type(reference))
         for column in inspect(type(entry)).columns:
             field = column.name
-            assert getattr(entry, field) == getattr(reference, field)
+            assert getattr(entry, field) == getattr(reference, field), (
+                "A field in the entry does not match the reference"
+                f"\n\treference: {reference}"
+                f"\n\t    entry: {entry}"
+            )
 
     @classmethod
     def assertEntriesMatch(cls, entries, references, order=False):
@@ -187,7 +207,12 @@ class TestHandler:
             references = sorted(
                 references, key=lambda reference: getattr(reference, primary_key)
             )
-        assert len(entries) == len(references)
+        assert len(entries) == len(references), (
+            "The number of references is not the same as the number of entries"
+            f"\n\treference count: {len(references)}"
+            f"\n\t    entry count: {len(entries)}\n"
+            f"{cls._format_reference_comparison(references, entries)}"
+        )
         # Compare the list elements
         for entry, reference in zip(entries, references):
             cls.assertEntryMatches(entry, reference)
@@ -197,7 +222,11 @@ class TestHandler:
         if criteria:
             query = query.where(*criteria)
         count = self._app.db.session.execute(query).scalar()
-        assert count == number
+        assert count == number, (
+            "The number of matches found does not match the number of matches expected"
+            f"\n\texpected matches: {number}"
+            f"\n\t   found matches: {count}"
+        )
 
     def assert_invalid_user_entry_add_fails(self, handler, mapping):
         # Count the original number of entries
