@@ -8,7 +8,7 @@ from sqlalchemy import event, inspect, select
 from sqlalchemy.orm import DeclarativeBase, declared_attr
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.sql.expression import TableClause
-from sqlalchemy_views import CreateView
+from sqlalchemy_views import CreateView as _CreateView
 
 
 class Model(DeclarativeBase):
@@ -122,6 +122,14 @@ class AuthorizedAccessMixin:
         return query
 
 
+class CreateView(_CreateView):
+    """A simple wrapper around `sqlalchemy_views.CreateView`."""
+
+    def __init__(self, view, selectable):
+        super().__init__(view, selectable)
+        self.view_name = view.name
+
+
 class View(TableClause):
     """
     A view of the database.
@@ -146,11 +154,9 @@ class View(TableClause):
         event.listen(
             metadata,
             "after_create",
-            CreateView(self, selectable).execute_if(
-                lambda ddl, target, connection, **kw: not self.view_exists
-            ),
+            CreateView(self, selectable).execute_if(callable_=self._is_not_yet_view),
         )
 
     @staticmethod
-    def view_exists(ddl, target, connection, **kw):
-        return ddl.name in inspect(connection).get_view_names()
+    def _is_not_yet_view(ddl, target, connection, **kw):
+        return ddl.view_name not in inspect(connection).get_view_names()
