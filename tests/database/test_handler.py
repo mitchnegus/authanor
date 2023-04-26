@@ -49,6 +49,20 @@ def authorized_entry_handler(client_context):
         yield AuthorizedEntryHandler
 
 
+class AlternateAuthorizedEntryViewHandler(
+    DatabaseViewHandler,
+    model=AlternateAuthorizedEntry,
+    model_view=AlternateAuthorizedEntryView,
+):
+    """A minimal database view handler for testing."""
+
+
+@pytest.fixture
+def view_handler(client_context):
+    with mocked_user(user_id=1):
+        yield AlternateAuthorizedEntryViewHandler
+
+
 @pytest.fixture
 def criteria(request):
     if request.param is None:
@@ -94,7 +108,28 @@ def authorized_entry_criteria_b_multiple():
 @pytest.fixture
 def authorized_entry_criteria_b_empty():
     criteria = QueryCriteria()
-    criteria.add_match_filter(AuthorizedEntry, "b", ("four"))
+    criteria.add_match_filter(AuthorizedEntry, "b", "four")
+    return criteria
+
+
+@pytest.fixture
+def alt_authorized_entry_criteria_r_single():
+    criteria = QueryCriteria()
+    criteria.add_match_filter(AlternateAuthorizedEntryView, "r", 4)
+    return criteria
+
+
+@pytest.fixture
+def alt_authorized_entry_criteria_r_multiple():
+    criteria = QueryCriteria()
+    criteria.add_match_filter(AlternateAuthorizedEntryView, "r", (2, 4))
+    return criteria
+
+
+@pytest.fixture
+def alt_authorized_entry_criteria_r_empty():
+    criteria = QueryCriteria()
+    criteria.add_match_filter(AlternateAuthorizedEntryView, "r", 5)
     return criteria
 
 
@@ -363,20 +398,6 @@ class TestDatabaseHandler(TestHandler):
             authorized_entry_handler.delete_entry(authorized_entry_id)
 
 
-class AlternateAuthorizedEntryViewHandler(
-    DatabaseViewHandler,
-    model=AlternateAuthorizedEntry,
-    model_view=AlternateAuthorizedEntryView,
-):
-    """A minimal database view handler for testing."""
-
-
-@pytest.fixture
-def view_handler(client_context):
-    with mocked_user(user_id=1):
-        yield AlternateAuthorizedEntryViewHandler
-
-
 class TestDatabaseViewHandler(TestHandler):
     # Reference only includes authorized entries accessible to user ID 1
     db_reference = [
@@ -389,3 +410,48 @@ class TestDatabaseViewHandler(TestHandler):
         assert view_handler.table.name == "alt_authorized_entries"
         assert view_handler.table_view.name == "alt_authorized_entries_view"
         assert view_handler.user_id == 1
+
+    def test_model_view_access(self, view_handler):
+        assert view_handler.model == AlternateAuthorizedEntry
+        view_handler._view_context = True
+        assert view_handler.model == AlternateAuthorizedEntryView
+        view_handler._view_context = False
+
+    @pytest.mark.parametrize(
+        "criteria, reference_entries",
+        [
+            [None, db_reference[:3]],
+            ["alt_authorized_entry_criteria_r_single", db_reference[1:2]],
+            ["alt_authorized_entry_criteria_r_multiple", db_reference[0:2]],
+        ],
+        indirect=["criteria"],
+    )
+    def test_get_authorized_entries_view(
+        self, view_handler, criteria, reference_entries
+    ):
+        alt_authorized_entries = view_handler.get_entries(criteria=criteria)
+        self.assert_entries_match(alt_authorized_entries, reference_entries)
+
+    @pytest.mark.parametrize(
+        "alt_authorized_entry_id, reference_entry",
+        [[1, db_reference[0]], [2, db_reference[1]]],
+    )
+    def test_get_authorized_entry_view(
+        self, view_handler, alt_authorized_entry_id, reference_entry
+    ):
+        alt_authorized_entry = view_handler.get_entry(alt_authorized_entry_id)
+        self.assert_entry_matches(alt_authorized_entry, reference_entry)
+
+    @pytest.mark.parametrize(
+        "alt_authorized_entry_id, exception",
+        [
+            [3, NotFound],  # the entry (view) is not accessible to user ID 1
+            [4, NotFound],  # the entry (view) is not in the database
+        ],
+    )
+    def test_get_authorized_entry_view_invalid(
+        self, view_handler, alt_authorized_entry_id, exception
+    ):
+        with pytest.raises(exception):
+            view_handler.get_entry(alt_authorized_entry_id)
+

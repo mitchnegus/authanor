@@ -28,6 +28,7 @@ def _preload_database(app):
             AuthorizedEntry(a=3, b="three", c=3),
             AlternateAuthorizedEntry(p=1, q=1),
             AlternateAuthorizedEntry(p=2, q=2),
+            AlternateAuthorizedEntry(p=3, q=3),
         ]
         app.db.session.add_all(entries)
 
