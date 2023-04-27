@@ -148,6 +148,10 @@ class TestDatabaseHandler(TestHandler):
         assert entry_handler.table.name == "entries"
         assert entry_handler.user_id == 1
 
+    def test_get_entries_by_id(self, entry_handler):
+        entries = entry_handler.get_entries((1, 2))
+        self.assert_entries_match(entries, self.db_reference[:2])
+
     @pytest.mark.parametrize(
         "criteria, reference_entries",
         [
@@ -157,7 +161,7 @@ class TestDatabaseHandler(TestHandler):
         ],
         indirect=["criteria"],
     )
-    def test_get_entries(self, entry_handler, criteria, reference_entries):
+    def test_get_entries_by_criteria(self, entry_handler, criteria, reference_entries):
         entries = entry_handler.get_entries(criteria=criteria)
         self.assert_entries_match(entries, reference_entries)
 

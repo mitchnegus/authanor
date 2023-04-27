@@ -154,74 +154,11 @@ class DatabaseHandlerMixin:
     _initialize_criteria_list = QueryCriteria
 
     @classmethod
-    def _make_select_query(cls, **kwargs):
+    def _build_select_query(cls, **kwargs):
         # Query entries for the authorized user (or fall back to SQLAlchemy `select`)
         select_method = getattr(cls.model, "select_for_user", select)
         query = select_method(cls.model, **kwargs)
         return query
-
-    @classmethod
-    def get_entries(cls, criteria=None, sort_order=None, **kwargs):
-        """
-        Retrieve a set of entries from the database.
-
-        Executes a simple query to select the table entries from
-        the database which match the given filters.
-
-        Parameters
-        ----------
-        criteria : QueryCriteria
-            Criteria to use when applying filters to the query.
-            (A filter with a value of `None` will be ignored.)
-        sort_order : str
-            The order to use when sorting values returned by the
-            database query.
-
-        Returns
-        -------
-        entries : list of database.models.Model
-            Models containing matching entries from the database.
-        """
-        query = cls._make_select_query(**kwargs)
-        query = cls._customize_entries_query(query, criteria, sort_order)
-        entries = cls._db.session.execute(query).scalars()
-        return entries
-
-    @classmethod
-    def find_entry(cls, criteria=None, sort_order=None, require_unique=True):
-        """
-        Find an entry using uniquely identifying characteristics.
-
-        Parameters
-        ----------
-        criteria : QueryCriteria
-            Criteria to use when applying filters to the query. (If all
-            criteria are `None`, the returned entry will be `None`.)
-        sort_order : str
-            The order to use when sorting values returned by the
-            database query.
-        require_unique : bool
-            A flag indicating whether a found entry must be the one and
-            only entry matching the criteria. The default is `True`, and
-            if an entry is not the only one matching the criteria, an
-            error is raised.
-
-        Returns
-        -------
-        entry : database.models.Model
-            A model containing a matching entry from the database.
-        """
-        if criteria:
-            # Query entries from the authorized user
-            query = cls._make_select_query()
-            query = cls._customize_entries_query(query, criteria, sort_order)
-            results = cls._db.session.execute(query)
-            if require_unique:
-                entry = results.scalar_one_or_none()
-            else:
-                entry = results.scalar()
-            return entry
-        return None
 
     @classmethod
     def _customize_entries_query(cls, query, criteria, sort_order):
@@ -243,6 +180,10 @@ class DatabaseHandlerMixin:
         if criteria:
             query = query.filter(*criteria)
         return query
+
+    @classmethod
+    def _execute_query(cls, query):
+        return cls._db.session.execute(query)
 
     @classmethod
     def _sort_query(cls, query, *column_orders):
@@ -268,6 +209,72 @@ class DatabaseHandlerMixin:
         return query
 
     @classmethod
+    def get_entries(cls, entry_ids=None, criteria=None, sort_order=None, **kwargs):
+        """
+        Retrieve a set of entries from the database.
+
+        Executes a simple query to select the table entries from
+        the database which match the given filters.
+
+        Parameters
+        ----------
+        entry_ids : list
+            A set of primary keys (IDs) to be found.
+        criteria : QueryCriteria
+            Additional criteria to use when applying filters to the
+            query. (Any filters with a value of `None` will be ignored.)
+        sort_order : str
+            The order to use when sorting values returned by the
+            database query.
+
+        Returns
+        -------
+        entries : list of database.models.Model
+            Models containing matching entries from the database.
+        """
+        # Prepare the criteria by merging IDs with other criteria
+        criteria = criteria if criteria else QueryCriteria()
+        criteria.add_match_filter(cls.model, "primary_key_field", entry_ids)
+        # Query the database
+        query = cls._build_select_query(**kwargs)
+        query = cls._customize_entries_query(query, criteria, sort_order)
+        entries = cls._execute_query(query).scalars()
+        return entries
+
+    @classmethod
+    def find_entry(cls, criteria=None, sort_order=None, require_unique=True):
+        """
+        Find an entry using uniquely identifying characteristics.
+
+        Parameters
+        ----------
+        criteria : QueryCriteria
+            Criteria to use when applying filters to the query. (If all
+            criteria are `None`, the returned entry will be `None`.)
+        sort_order : str
+            The order to use when sorting values returned by the
+            database query (before selecting the first value to return).
+        require_unique : bool
+            A flag indicating whether a found entry must be the one and
+            only entry matching the criteria. The default is `True`, and
+            if an entry is not the only one matching the criteria, an
+            error is raised.
+
+        Returns
+        -------
+        entry : database.models.Model
+            A model containing a matching entry from the database.
+        """
+        if criteria:
+            # Query entries from the authorized user
+            query = cls._build_select_query()
+            query = cls._customize_entries_query(query, criteria, sort_order)
+            results = cls._execute_query(query)
+            entry = results.scalar_one_or_none() if require_unique else results.scalar()
+            return entry
+        return None
+
+    @classmethod
     def get_entry(cls, entry_id):
         """
         Retrieve a single entry from the database.
@@ -285,10 +292,11 @@ class DatabaseHandlerMixin:
         entry : database.models.Model
             A model containing a matching entry from the database.
         """
-        criteria = [cls.model.primary_key_field == entry_id]
-        query = cls._make_select_query().where(*criteria)
+        criteria = QueryCriteria()
+        criteria.add_match_filter(cls.model, "primary_key_field", entry_id)
+        query = cls._build_select_query().where(*criteria)
         try:
-            entry = cls._db.session.execute(query).scalar_one()
+            entry = cls._execute_query(query).scalar_one()
         except NoResultFound:
             abort_msg = (
                 f"The entry with ID {entry_id} does not exist for the current user."
