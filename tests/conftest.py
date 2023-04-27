@@ -22,13 +22,15 @@ def _preload_database(app):
         entries = [
             Entry(x=1, y="ten", user_id=1),
             Entry(x=2, y="eleven", user_id=1),
-            Entry(x=3, y="twenty", user_id=2),
+            Entry(x=3, y="twelve", user_id=1),
+            Entry(x=4, y="twenty", user_id=2),
             AuthorizedEntry(a=1, b="one", c=1),
             AuthorizedEntry(a=2, b="two", c=1),
-            AuthorizedEntry(a=3, b="three", c=3),
+            AuthorizedEntry(a=3, b="three", c=4),
             AlternateAuthorizedEntry(p=1, q=1),
             AlternateAuthorizedEntry(p=2, q=2),
-            AlternateAuthorizedEntry(p=3, q=3),
+            AlternateAuthorizedEntry(p=3, q=2),
+            AlternateAuthorizedEntry(p=4, q=3),
         ]
         app.db.session.add_all(entries)
 

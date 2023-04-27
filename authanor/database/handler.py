@@ -161,9 +161,26 @@ class DatabaseHandlerMixin:
         return query
 
     @classmethod
-    def _customize_entries_query(cls, query, criteria, sort_order):
+    def _customize_entries_query(cls, query, criteria, column_orders):
         """
         Customize a query to retrieve entries from the database.
+
+        Parameters
+        ----------
+        query : sqlalchemy.sql.expression.Select
+            The query to be customized.
+        criteria : QueryCriteria
+            Additional criteria to use when applying filters to the
+            query. (Any filters with a value of `None` will be ignored.)
+        column_orders : dict
+            A mapping between columns and the sorting order to
+            apply to those columns (e.g., 'ASC' or 'DESC'). Columns will
+            be sorted first to last.
+
+        Returns
+        -------
+        query : sqlalchemy.sql.expression.Select
+            The customized (sorted, filtered, etc.) query.
 
         Note
         ----
@@ -172,6 +189,8 @@ class DatabaseHandlerMixin:
         query executed by the current `Session` object in the
         `get_entries` method.
         """
+        column_orders = column_orders if column_orders else {}
+        query = cls._sort_query(query, column_orders)
         return cls._filter_entries(query, criteria)
 
     @staticmethod
@@ -186,7 +205,7 @@ class DatabaseHandlerMixin:
         return cls._db.session.execute(query)
 
     @classmethod
-    def _sort_query(cls, query, *column_orders):
+    def _sort_query(cls, query, column_orders):
         """
         Sort a query on the given column(s).
 
@@ -194,22 +213,23 @@ class DatabaseHandlerMixin:
         ----------
         query : sqlalchemy.sql.expression.Select
             The query to be sorted.
-        column_orders : tuple
-            Any number of pairs consisting of a table column and a
-            string giving the sorting order for that column.
+        column_orders :
+            A mapping of pairs consisting of a table column key and a
+            string value describing the sorting order ('ASC' or 'DESC')
+            for the column.
         """
-        for column, sort_order in column_orders:
+        for column, sort_order in column_orders.items():
             if sort_order:
                 validate_sort_order(sort_order)
                 if sort_order == "DESC":
                     order_column = column.desc()
-                else:
+                elif sort_order == "ASC":
                     order_column = column.asc()
                 query = query.order_by(order_column)
         return query
 
     @classmethod
-    def get_entries(cls, entry_ids=None, criteria=None, sort_order=None, **kwargs):
+    def get_entries(cls, entry_ids=None, criteria=None, column_orders=None, **kwargs):
         """
         Retrieve a set of entries from the database.
 
@@ -223,9 +243,13 @@ class DatabaseHandlerMixin:
         criteria : QueryCriteria
             Additional criteria to use when applying filters to the
             query. (Any filters with a value of `None` will be ignored.)
-        sort_order : str
-            The order to use when sorting values returned by the
-            database query.
+        column_orders : dict
+            A mapping between column names and the sorting order to
+            apply to those columns (e.g., 'ASC' or 'DESC'). Columns will
+            be sorted first to last.
+        **kwargs :
+            Keyword arguments that may be defined for specific handler
+            subclasses.
 
         Returns
         -------
@@ -237,12 +261,12 @@ class DatabaseHandlerMixin:
         criteria.add_match_filter(cls.model, "primary_key_field", entry_ids)
         # Query the database
         query = cls._build_select_query(**kwargs)
-        query = cls._customize_entries_query(query, criteria, sort_order)
+        query = cls._customize_entries_query(query, criteria, column_orders)
         entries = cls._execute_query(query).scalars()
         return entries
 
     @classmethod
-    def find_entry(cls, criteria=None, sort_order=None, require_unique=True):
+    def find_entry(cls, criteria=None, column_orders=None, require_unique=True):
         """
         Find an entry using uniquely identifying characteristics.
 
@@ -251,9 +275,10 @@ class DatabaseHandlerMixin:
         criteria : QueryCriteria
             Criteria to use when applying filters to the query. (If all
             criteria are `None`, the returned entry will be `None`.)
-        sort_order : str
-            The order to use when sorting values returned by the
-            database query (before selecting the first value to return).
+        column_orders : dict
+            A mapping between column names and the sorting order to
+            apply to those columns (e.g., 'ASC' or 'DESC'). Columns will
+            be sorted first to last.
         require_unique : bool
             A flag indicating whether a found entry must be the one and
             only entry matching the criteria. The default is `True`, and
@@ -268,7 +293,7 @@ class DatabaseHandlerMixin:
         if criteria:
             # Query entries from the authorized user
             query = cls._build_select_query()
-            query = cls._customize_entries_query(query, criteria, sort_order)
+            query = cls._customize_entries_query(query, criteria, column_orders)
             results = cls._execute_query(query)
             entry = results.scalar_one_or_none() if require_unique else results.scalar()
             return entry
@@ -433,14 +458,18 @@ class DatabaseViewHandlerMixin(DatabaseHandlerMixin):
 
     @classmethod
     @view_query
-    def get_entries(cls, criteria=None, sort_order=None):
-        return super().get_entries(criteria=criteria, sort_order=sort_order)
+    def get_entries(cls, entry_ids=None, criteria=None, column_orders=None):
+        return super().get_entries(
+            entry_ids=entry_ids, criteria=criteria, column_orders=column_orders
+        )
 
     @classmethod
     @view_query
-    def find_entry(cls, criteria=None, sort_order=None, require_unique=True):
+    def find_entry(cls, criteria=None, column_orders=None, require_unique=True):
         return super().find_entry(
-            criteria=criteria, sort_order=sort_order, require_unique=require_unique
+            criteria=criteria,
+            column_orders=column_orders,
+            require_unique=require_unique,
         )
 
     @classmethod

@@ -15,4 +15,6 @@ def validate_sort_order(sort_order):
         must be either 'ASC' or 'DESC'.
     """
     if sort_order not in ("ASC", "DESC"):
-        raise ValueError("Provide a valid sort order.")
+        raise ValueError(
+            f"Provide a valid sort order—either 'ASC' or 'DESC', not '{sort_order}'."
+        )
