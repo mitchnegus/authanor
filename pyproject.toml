@@ -43,6 +43,7 @@ source = 'vcs'
 [tool.hatch.build.targets.sdist]
 include = [
   '/authanor',
+  '/authanor/testing',
 ]
 exclude = [
   '*.pyc',
