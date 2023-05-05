@@ -11,7 +11,7 @@ from authanor.database.handler import (
     DatabaseViewHandler,
     QueryCriteria,
 )
-from authanor.test.helpers import TestHandler
+from authanor.testing.helpers import TestHandler
 
 from ..helpers import (
     AlternateAuthorizedEntry,

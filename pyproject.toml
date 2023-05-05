@@ -35,7 +35,7 @@ Repository = 'https://github.com/mitchnegus/authanor'
 Changelog = 'https://github.com/mitchnegus/authanor/blob/main/CHANGELOG.md'
 
 [project.entry-points.pytest11]
-authanor = "authanor.test.helpers"
+authanor = "authanor.testing.helpers"
 
 [tool.hatch.version]
 source = 'vcs'
@@ -73,7 +73,7 @@ addopts = [
 [tool.coverage.run]
 omit = [
   'tests/*',
-  'authanor/test/helpers.py',
+  'authanor/testing/helpers.py',
 ]
 
 [tool.coverage.report]
