@@ -13,6 +13,13 @@ ENV = authanor-env
 ENV_BIN = $(ENV)/bin
 ENV_ACTIVATE = $(ENV_BIN)/activate
 
+# Documentation locations
+DOCS = docs
+DOCS_SRC = $(DOCS)/source
+DOCS_SRC_API = $(DOCS_SRC)/api
+DOCS_BUILD = $(DOCS)/build
+DOCS_HTML = $(DOCS_BUILD)/html
+
 # Testing
 TEST_DIR = tests
 TEST_PYTHON_FILES = $(wildcard $(TEST_DIR)/*.py) \

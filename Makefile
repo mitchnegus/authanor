@@ -30,6 +30,15 @@ $(ENV)/.touchfile : $(REQS) pyproject.toml
 	@touch $(ENV)/.touchfile
 
 
+## docs 		: Build documentation
+.PHONY: docs
+docs : env
+	@rm -rf $(DOCS_SRC_API)
+	@. $(ENV_ACTIVATE); \
+	sphinx-apidoc -f -o $(DOCS_SRC_API) $(PACKAGE_DIR);
+	sphinx-build -b html $(DOCS_SRC) $(DOCS_HTML)
+
+
 ## test		: Run tests
 .PHONY: test
 test : env
@@ -76,6 +85,7 @@ clean :
 	@rm -rf htmlcov/
 	@rm -rf dist/ *egg-info/
 	@rm -rf .pytest_cache/
+	@rm -rf $(DOCS_SRC_API)
 	@rm -rf $(ENV)
 
 

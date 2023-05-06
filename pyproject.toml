@@ -66,6 +66,8 @@ replacement = '[\1](https://github.com/mitchnegus/authanor/blob/main/\g<2>)'
 addopts = [
   '--import-mode=importlib',
 ]
+pythonpath = ["tests/helpers"]
+norecursedirs = ["tests/helpers"]
 
 [tool.coverage.run]
 omit = [
@@ -84,3 +86,4 @@ force-exclude = 'src/authanor/_version.py'
 [tool.isort]
 profile = 'black'
 src_paths = ['src/authanor', 'test']
+known_local_folder = ["test_helpers"]
