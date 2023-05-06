@@ -96,6 +96,7 @@ class SQLAlchemy:
         decorator : func
             The wrapper function that sets the database interface.
         """
+
         def _inner_decorator(init_app_func):
             @functools.wraps(init_app_func)
             def wrapper(app):
@@ -110,7 +111,9 @@ class SQLAlchemy:
                 # If testing, the database still needs to be initialized/prepopulated
                 if app.testing:
                     app.db.initialize(app)
+
             return wrapper
+
         return _inner_decorator
 
 

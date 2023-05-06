@@ -7,7 +7,7 @@ from sqlalchemy import create_engine
 from authanor.database import SQLAlchemy as _SQLAlchemy
 from authanor.testing.helpers import AppTestManager
 
-from .helpers import AlternateAuthorizedEntry, AuthorizedEntry, Entry
+from test_helpers import AlternateAuthorizedEntry, AuthorizedEntry, Entry
 
 
 class SQLAlchemy(_SQLAlchemy):

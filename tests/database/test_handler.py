@@ -13,7 +13,7 @@ from authanor.database.handler import (
 )
 from authanor.testing.helpers import TestHandler
 
-from ..helpers import (
+from test_helpers import (
     AlternateAuthorizedEntry,
     AlternateAuthorizedEntryView,
     AuthorizedEntry,

@@ -5,7 +5,7 @@ import pytest
 
 from authanor.database.models import AuthorizedAccessMixin, Model
 
-from ..helpers import AuthorizedEntry, Entry
+from test_helpers import AuthorizedEntry, Entry
 
 
 class TestModels:

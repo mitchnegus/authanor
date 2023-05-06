@@ -342,6 +342,7 @@ class DatabaseHandlerMixin:
         handler logic to choose either the entry or the corresponding
         view; that process implicitly guarantees authorization.
         """
+
         @functools.wraps(method)
         def wrapper(cls, *args, **kwargs):
             entry = method(cls, *args, **kwargs)
@@ -349,6 +350,7 @@ class DatabaseHandlerMixin:
             entry_id = getattr(entry, entry.primary_key_field.name)
             entry = cls.get_entry(entry_id)
             return entry
+
         return wrapper
 
     @classmethod

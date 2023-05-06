@@ -41,12 +41,12 @@ authanor = "authanor.testing.helpers"
 source = 'vcs'
 
 [tool.hatch.build]
-include = [
-  '/authanor',
+packages = [
+  'src/authanor',
 ]
 
 [tool.hatch.build.hooks.vcs]
-version-file = 'authanor/_version.py'
+version-file = 'src/authanor/_version.py'
 
 [tool.hatch.metadata.hooks.fancy-pypi-readme]
 content-type = 'text/markdown'
@@ -70,7 +70,7 @@ addopts = [
 [tool.coverage.run]
 omit = [
   'tests/*',
-  'authanor/testing/helpers.py',
+  'src/authanor/testing/helpers.py',
 ]
 
 [tool.coverage.report]
@@ -79,8 +79,8 @@ exclude_lines = [
 ]
 
 [tool.black]
-force-exclude = 'authanor/_version.py'
+force-exclude = 'src/authanor/_version.py'
 
 [tool.isort]
 profile = 'black'
-src_paths = ['authanor', 'test']
+src_paths = ['src/authanor', 'test']

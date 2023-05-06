@@ -1,10 +1,10 @@
 """
 Helper tools to improve testing of authorized database interactions.
 """
-import textwrap
 import functools
 import os
 import tempfile
+import textwrap
 from collections import namedtuple
 from contextlib import contextmanager
 from pprint import pformat
@@ -14,12 +14,12 @@ from sqlalchemy import inspect, select
 from sqlalchemy.sql.expression import func
 from werkzeug.exceptions import NotFound
 
-
 registry = {"app_manager": None}
 
 
 class DefaultTestingConfig:
     """A Flask configuration designed for testing."""
+
     TESTING = True
     SECRET_KEY = "testing key"
 
@@ -41,11 +41,12 @@ class AppTestManager:
     database version and impact subsequent tests. Since simply rolling
     back the changes is insufficient to restore the database, this
     object manages which app (and database) are used for a transaction.
-    The current app options are either
-        (1) A persistent app, which survives through the entire test
-            process and provides quick database access; or
-        (2) An ephemeral app, which is designed to survive through only
-            one single test.
+    The current app options are either:
+
+    #. A persistent app, which survives through the entire test
+       process and provides quick database access; or
+    #. An ephemeral app, which is designed to survive through only
+       one single test.
 
     To enable switching between the two types of apps, this class relies
     on two Pytest fixtures (`app_context` and `app_transaction_context`)
@@ -156,10 +157,12 @@ def transaction_lifetime(test_function):
     wrapped_test_function : callable
         The wrapped test.
     """
+
     @pytest.mark.usefixtures("app_transaction_context")
     @functools.wraps(test_function)
     def wrapper(*args, **kwargs):
         test_function(*args, **kwargs)
+
     return wrapper
 
 
@@ -237,9 +240,7 @@ class TestHandler:
             handler.add_entry(**mapping)
         # Rollback and ensure that an entry was not added
         self._app.db.close()
-        self.assert_number_of_matches(
-            entry_count, handler.model.primary_key_field
-        )
+        self.assert_number_of_matches(entry_count, handler.model.primary_key_field)
 
     def assert_entry_deletion_succeeds(self, handler, entry_id):
         handler.delete_entry(entry_id)
@@ -247,7 +248,7 @@ class TestHandler:
         self.assert_number_of_matches(
             0,
             handler.model.primary_key_field,
-            handler.model.primary_key_field == entry_id
+            handler.model.primary_key_field == entry_id,
         )
 
 

@@ -5,8 +5,8 @@ from datetime import date
 
 from flask import g
 from sqlalchemy import event, inspect, select
-from sqlalchemy.orm import DeclarativeBase, declared_attr
 from sqlalchemy.ext.hybrid import hybrid_property
+from sqlalchemy.orm import DeclarativeBase, declared_attr
 from sqlalchemy.sql.expression import TableClause
 from sqlalchemy_views import CreateView as _CreateView
 
@@ -144,6 +144,7 @@ class View(TableClause):
     and the SQLAlchemy wiki resource on 'Views'
     (https://github.com/sqlalchemy/sqlalchemy/wiki/Views).
     """
+
     inherit_cache = True
 
     def __init__(self, name, metadata, selectable):

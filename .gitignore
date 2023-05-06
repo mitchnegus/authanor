@@ -73,4 +73,4 @@ target/
 authanor-env/
 
 # Hatch-generated version file
-authanor/_version.py
+src/authanor/_version.py
