@@ -34,7 +34,7 @@ This structure allows a single global database to be created once at the beginni
 
 ## Installation
 
-The _Authanor_ package is registered on the [Python Package Index (PyPI)](https://pypi.org/project/...) for easy installation.
+The _Authanor_ package is registered on the [Python Package Index (PyPI)](https://pypi.org/project/authanor) for easy installation.
 To install the package, simply run
 
 ```
