@@ -64,8 +64,10 @@ class AppTestManager:
     persistent_app = None
     ephemeral_app = None
 
-    def __init__(self, factory):
+    def __init__(self, factory, config=None, **config_kwargs):
         self.app_factory = factory
+        self._test_config_cls = config if config else DefaultTestingConfig
+        self._test_config_kwargs = config_kwargs
         registry["app_manager"] = self
 
     def get_app(self):
@@ -77,7 +79,8 @@ class AppTestManager:
 
     def generate_app(self, test_database_path, *args, **kwargs):
         # Create a testing app
-        test_config = self.prepare_test_config(test_database_path, *args, **kwargs)
+        config_kwargs = self._test_config_kwargs | kwargs
+        test_config = self._test_config_cls(test_database_path, *args, **config_kwargs)
         app = self.app_factory(test_config)
         self.setup_test_database(app)
         return app
@@ -122,11 +125,6 @@ class AppTestManager:
         # After function execution, close the file and remove it
         os.close(db_fd)
         os.unlink(db_path)
-
-    @staticmethod
-    def prepare_test_config(test_db_path, *args, **kwargs):
-        """Prepare a configuration object for the app. It must define a database."""
-        return DefaultTestingConfig(test_db_path)
 
     @staticmethod
     def setup_test_database(app):
