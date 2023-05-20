@@ -85,5 +85,5 @@ force-exclude = 'src/authanor/_version.py'
 
 [tool.isort]
 profile = 'black'
-src_paths = ['src/authanor', 'test']
+src_paths = ['src/authanor', 'tests']
 known_local_folder = ["test_helpers"]
