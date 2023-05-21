@@ -110,6 +110,7 @@ class SQLAlchemy:
                 # Establish behavior for closing the database
                 app.teardown_appcontext(app.db.close)
                 # If testing, the database still needs to be initialized/prepopulated
+                # (otherwise, database initialization is typically executed via the CLI)
                 if app.testing:
                     app.db.initialize(app)
 
