@@ -9,6 +9,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 
 from .models import Model
+from .utils import db_transaction
 
 DIALECT = "sqlite"
 DBAPI = "pysqlite"
