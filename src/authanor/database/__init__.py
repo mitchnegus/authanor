@@ -20,9 +20,10 @@ class SQLAlchemy:
 
     _base = Model
 
-    def __init__(self, db_path=None):
+    def __init__(self, echo_engine=False):
         self.engine = None
         self.scoped_session = None
+        self.echo_engine = echo_engine
 
     @property
     def metadata(self):
@@ -37,8 +38,16 @@ class SQLAlchemy:
         # Returns the current `Session` object
         return self.scoped_session()
 
-    def setup_engine(self, db_path, echo_engine=False):
-        """Setup the database engine, a session factory, and metadata."""
+    def setup_engine(self, db_path, echo_engine=None):
+        """
+        Setup the database engine, a session factory, and metadata.
+
+        Parameters
+        ----------
+        db_path : os.PathLike
+            The path to the local database.
+        """
+        echo_engine = self.echo_engine if echo_engine is None else echo_engine
         # Create the engine using the custom database URL
         db_url = f"{DIALECT}+{DBAPI}:///{db_path}"
         self.engine = create_engine(db_url, echo=echo_engine)
@@ -78,19 +87,27 @@ class SQLAlchemy:
             self.scoped_session.remove()
 
     @classmethod
-    def interface_selector(cls, interface_instance):
+    def interface_selector(cls, interface_instance, *args, **kwargs):
         """
         A decorator to choose between the database interface.
 
         This decorator wraps an app initialization function to determine
         whether a new interface should be created (e.g., during testing)
         or an existing interface previously instantiated by the
-        application should be used instead.
+        application should be used instead. This selector assumes that
+        the path to the local database instance will be provided by the
+        app's configuration.
 
         Parameters
         ----------
         interface_instance : authanor.database.SQLAlchemy
             An existing database interface instance to potentially use.
+        *args :
+            Positional arguments that will be passed to the interface
+            constructor.
+        **kwargs :
+            Keyword arguments that will be passed to the interface
+            constructor.
 
         Returns
         -------
@@ -104,7 +121,7 @@ class SQLAlchemy:
                 # Prepare database access with SQLAlchemy
                 #   - Use the `app.db` attribute like the `app.extensions` dict
                 #     (but not actually that dict because this is not an extension)
-                app.db = cls() if app.testing else interface_instance
+                app.db = cls(*args, **kwargs) if app.testing else interface_instance
                 app.db.setup_engine(db_path=app.config["DATABASE"])
                 init_app_func(app)
                 # Establish behavior for closing the database
