@@ -149,7 +149,7 @@ class AppTestManager:
 
         This context manager creates a temporary file that is used for the
         testing database. The temporary file persists as long as the context
-        survives, and the temporarykjj file is removed after the context
+        survives, and the temporary file is removed after the context
         lifetime is completed.
         """
         db_fd, db_path = tempfile.mkstemp()
