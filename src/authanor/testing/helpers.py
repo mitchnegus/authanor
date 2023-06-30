@@ -22,6 +22,8 @@ class DefaultTestingConfig:
 
     TESTING = True
     SECRET_KEY = "testing key"
+    DATABASE_INTERFACE_ARGS = ()
+    DATABASE_INTERFACE_KWARGS = {}
 
     def __init__(self, db_path=None):
         self.DATABASE = db_path
@@ -165,7 +167,7 @@ class AppTestManager:
 
 def transaction_lifetime(test_function):
     """
-    Create a decorator to leverage an ephemeral app.
+    Create a decorator to use an "ephemeral" app.
 
     While many tests just check elements in the database, and so can
     share a persistent app object for performance reasons. However, some

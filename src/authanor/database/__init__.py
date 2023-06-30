@@ -19,6 +19,7 @@ class SQLAlchemy:
     """Store an interface to SQLAlchemy database objects."""
 
     _base = Model
+    default_interface = None
 
     def __init__(self, echo_engine=False):
         self.engine = None
@@ -87,27 +88,27 @@ class SQLAlchemy:
             self.scoped_session.remove()
 
     @classmethod
-    def interface_selector(cls, interface_instance, *args, **kwargs):
+    def create_default_interface(cls, *args, **kwargs):
+        """Create a default interface for the app."""
+        cls.default_interface = cls(*args, **kwargs)
+
+    @classmethod
+    def interface_selector(cls, init_app_func):
         """
-        A decorator to choose between the database interface.
+        A decorator to choose the database interface.
 
         This decorator wraps an app initialization function to determine
         whether a new interface should be created (e.g., during testing)
-        or an existing interface previously instantiated by the
-        application should be used instead. This selector assumes that
-        the path to the local database instance will be provided by the
-        app's configuration.
+        or an existing (default) interface previously instantiated by
+        the application should be used instead. This selector assumes
+        that the path to the local database instance will be provided by
+        the app's configuration.
 
         Parameters
         ----------
-        interface_instance : authanor.database.SQLAlchemy
-            An existing database interface instance to potentially use.
-        *args :
-            Positional arguments that will be passed to the interface
-            constructor.
-        **kwargs :
-            Keyword arguments that will be passed to the interface
-            constructor.
+        init_app_func : callable
+            A function to initialize the app. Usually this function is
+            called from within the Flask app factory function.
 
         Returns
         -------
@@ -115,25 +116,33 @@ class SQLAlchemy:
             The wrapper function that sets the database interface.
         """
 
-        def _inner_decorator(init_app_func):
-            @functools.wraps(init_app_func)
-            def wrapper(app):
-                # Prepare database access with SQLAlchemy
-                #   - Use the `app.db` attribute like the `app.extensions` dict
-                #     (but not actually that dict because this is not an extension)
-                app.db = cls(*args, **kwargs) if app.testing else interface_instance
-                app.db.setup_engine(db_path=app.config["DATABASE"])
-                init_app_func(app)
-                # Establish behavior for closing the database
-                app.teardown_appcontext(app.db.close)
-                # If testing, the database still needs to be initialized/prepopulated
-                # (otherwise, database initialization is typically executed via the CLI)
-                if app.testing:
-                    app.db.initialize(app)
-
-            return wrapper
-
-        return _inner_decorator
+        @functools.wraps(init_app_func)
+        def wrapper(app):
+            # Prepare database access with SQLAlchemy:
+            # - Use the `app.db` attribute like the `app.extensions` dict
+            #   (but not actually that dict because this is not an extension)
+            if not app.testing:
+                if not cls.default_interface:
+                    raise RuntimeError(
+                        "A default database interface has not yet been defined. "
+                        "Define a default interface for all apps running in "
+                        "production or development mode."
+                    )
+                app.db = cls.default_interface
+            else:
+                app.db = cls(
+                    *app.config["DATABASE_INTERFACE_ARGS"],
+                    **app.config["DATABASE_INTERFACE_KWARGS"],
+                )
+            app.db.setup_engine(db_path=app.config["DATABASE"])
+            init_app_func(app)
+            # Establish behavior for closing the database
+            app.teardown_appcontext(app.db.close)
+            # If testing, the database still needs to be initialized/prepopulated
+            # (otherwise, database initialization is typically executed via the CLI)
+            if app.testing:
+                app.db.initialize(app)
+        return wrapper
 
 
 @event.listens_for(Engine, "connect")
