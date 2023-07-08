@@ -4,6 +4,7 @@ ORM model definitions corresponding to tables in the SQLite database.
 from datetime import date
 
 from flask import g
+from fuisce.database import SQLAlchemy
 from sqlalchemy import event, inspect, select
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import DeclarativeBase, declared_attr
@@ -13,6 +14,7 @@ from sqlalchemy_views import CreateView as _CreateView
 
 class Model(DeclarativeBase):
     """A declarative base for all models."""
+    metadata = SQLAlchemy.metadata
 
     def _format_repr_attr(self, name):
         value = getattr(self, name)

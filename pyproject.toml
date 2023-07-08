@@ -12,6 +12,7 @@ license = { text = 'GNU GPLv3' }
 requires-python = '>=3.9,<3.11'
 dependencies = [
     'flask>=2.2.2',
+    'fuisce',
     'sqlalchemy>=2.0.0',
     'sqlalchemy-views>=0.3.2',
 ]
@@ -86,4 +87,4 @@ force-exclude = 'src/authanor/_version.py'
 [tool.isort]
 profile = 'black'
 src_paths = ['src/authanor', 'tests']
-known_local_folder = ["test_helpers"]
+known_local_folder = ["testing_helpers"]

@@ -13,12 +13,13 @@ from authanor.database.handler import (
 )
 from authanor.testing.helpers import TestHandler
 
-from test_helpers import (
+from testing_helpers import (
     AlternateAuthorizedEntry,
     AlternateAuthorizedEntryView,
     AuthorizedEntry,
     Entry,
 )
+from fuisce.database import SQLAlchemy
 
 
 @contextmanager

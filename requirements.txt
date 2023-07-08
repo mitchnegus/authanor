@@ -2,6 +2,7 @@ black>=23.1.0
 colorama>=0.4.6
 coverage>=7.1.0
 flask>=2.2.3
+fuisce>=1.0.0
 furo
 hatch>=1.6.3
 isort>=5.12.0

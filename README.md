@@ -22,16 +22,6 @@ This is designed to be extensible, since I often want this behavior available fo
 If you read this and think "This dude's dumb; why on Earth didn't he use _this_ functionality baked into SQLAlchemy?" drop me a line because I'm interested to know what I'm missing.
 
 
-### Testing Tools
-
-Separately, the package also includes tools for testing database interactions via `pytest`.
-This includes fixtures for testing the handler objects mentioned above, but also for generally handling test setup and teardown.
-Perhaps most consequentially in that regard are the `AppTestManager` object and `@transaction_lifetime` decorator in the `testing` module.
-The `AppTestManager` intelligently uses an existing "persistent" database for the majority of an application's tests (created just once, and prefilled as necessary), unless the app is run within the context of a SQLAlchemy transaction in which case an "ephemeral" database is created for just the lifetime of a single test.
-Tests are denoted as consisting of SQLAlchemy transactions by decorating them with the `@transaction_lifetime` generator.
-This structure allows a single global database to be created once at the beginning of testing to serve any test that only accesses the database, but then database copies are only ever generated when explicitly required (e.g., for testing create/update/delete actions).
-
-
 ## Installation
 
 The _Authanor_ package is registered on the [Python Package Index (PyPI)](https://pypi.org/project/authanor) for easy installation.
