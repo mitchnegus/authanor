@@ -1,6 +1,7 @@
 """
 A database handler for facilitating interactions with the SQLite database.
 """
+
 import functools
 from abc import ABCMeta
 from collections import UserList

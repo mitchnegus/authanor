@@ -1,4 +1,5 @@
 """Tests for the specialized authorization models."""
+
 from unittest.mock import Mock, call, patch
 
 import pytest

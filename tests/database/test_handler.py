@@ -1,8 +1,10 @@
 """Tests for the database handlers."""
+
 from contextlib import contextmanager
 from unittest.mock import Mock, patch
 
 import pytest
+from fuisce.database import SQLAlchemy
 from sqlalchemy.exc import IntegrityError
 from werkzeug.exceptions import NotFound
 
@@ -19,7 +21,6 @@ from testing_helpers import (
     AuthorizedEntry,
     Entry,
 )
-from fuisce.database import SQLAlchemy
 
 
 @contextmanager

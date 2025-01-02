@@ -1,6 +1,7 @@
 """
 Helper tools to improve testing of authorized database interactions.
 """
+
 import textwrap
 from pprint import pformat
 

@@ -1,4 +1,5 @@
 """Helper objects to improve modularity of tests."""
+
 from sqlalchemy import ForeignKey, Integer, String, select
 from sqlalchemy.orm import mapped_column, relationship
 

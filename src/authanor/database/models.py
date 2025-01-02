@@ -1,6 +1,7 @@
 """
 ORM model definitions corresponding to tables in the SQLite database.
 """
+
 from datetime import date
 
 from flask import g
@@ -14,6 +15,7 @@ from sqlalchemy_views import CreateView as _CreateView
 
 class Model(DeclarativeBase):
     """A declarative base for all models."""
+
     metadata = SQLAlchemy.metadata
 
     def _format_repr_attr(self, name):
