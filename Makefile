@@ -35,7 +35,7 @@ $(ENV)/.touchfile : $(REQS) pyproject.toml
 docs : env
 	@rm -rf $(DOCS_SRC_API)
 	@. $(ENV_ACTIVATE); \
-	sphinx-apidoc -f -o $(DOCS_SRC_API) $(PACKAGE_DIR);
+	sphinx-apidoc -f -o $(DOCS_SRC_API) $(PACKAGE_DIR); \
 	sphinx-build -b html $(DOCS_SRC) $(DOCS_HTML)
 
 
