@@ -461,9 +461,12 @@ class DatabaseViewHandlerMixin(DatabaseHandlerMixin):
 
     @classmethod
     @view_query
-    def get_entries(cls, entry_ids=None, criteria=None, column_orders=None):
+    def get_entries(cls, entry_ids=None, criteria=None, column_orders=None, **kwargs):
         return super().get_entries(
-            entry_ids=entry_ids, criteria=criteria, column_orders=column_orders
+            entry_ids=entry_ids,
+            criteria=criteria,
+            column_orders=column_orders,
+            **kwargs,
         )
 
     @classmethod

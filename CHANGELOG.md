@@ -20,4 +20,5 @@
 
 ### 1.1.1
 
+- Pass keyword arguments through `DatabaseViewHandlerMixin` mixin `get_entries` method to parent
 - Fixed source code formatting
